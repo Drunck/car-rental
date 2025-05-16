@@ -1,0 +1,24 @@
+﻿services:
+  database:
+    build:
+      context: ./Database
+    ports:
+      - "5432:5432"
+    container_name: sigma-cars-database
+  backend:
+    build:
+      context: ./Backend
+    ports:
+      - "5000:5000"
+    depends_on:
+      - database
+    container_name: sigma-cars-backend
+  reverse-proxy:
+    build:
+      context: ./ReverseProxy/DevFrontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    container_name: sigma-cars-reverse-proxy
+name: sigma-cars-dev-frontend
