@@ -9,7 +9,6 @@ services:
       placement:
         constraints:
           - node.role == worker
-          - node.labels.role == backend
 
   backend:
     image: madddsnail/car-rental-backend:latest
@@ -48,7 +47,6 @@ services:
       placement:
         constraints:
           - node.role == worker
-          - node.labels.role == backend
 
 volumes:
   db_data:
