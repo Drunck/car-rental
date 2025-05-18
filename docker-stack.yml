@@ -42,11 +42,12 @@ services:
     ports:
       - "80:80"
     deploy:
-      restart_policy:
-        condition: on-failure
+      replicas: 1
       placement:
         constraints:
           - node.role == worker
+      restart_policy:
+        condition: on-failure
 
 volumes:
   db_data:
