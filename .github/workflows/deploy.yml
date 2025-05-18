@@ -1,4 +1,4 @@
-name: Deploy to Docker Swarm
+name: CI/CD Pipeline for Car Rental App
 
 on:
   push:
@@ -6,7 +6,8 @@ on:
       - main
 
 jobs:
-  deploy:
+  publish:
+    name: Build and Push Docker Images
     runs-on: ubuntu-latest
 
     steps:
@@ -16,34 +17,35 @@ jobs:
     - name: Log in to Docker Hub
       run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
-    - name: Build and push backend image
+    - name: Build and push backend
       run: |
         docker build -t ${{ secrets.DOCKER_USERNAME }}/car-rental-backend:latest ./Backend
         docker push ${{ secrets.DOCKER_USERNAME }}/car-rental-backend:latest
 
-    - name: Build and push frontend image
+    - name: Build and push frontend
       run: |
         docker build -t ${{ secrets.DOCKER_USERNAME }}/car-rental-frontend:latest ./Frontend
         docker push ${{ secrets.DOCKER_USERNAME }}/car-rental-frontend:latest
 
-    - name: Build and push reverse-proxy image
+    - name: Build and push reverse-proxy
       run: |
         docker build -t ${{ secrets.DOCKER_USERNAME }}/car-rental-reverse-proxy:latest ./ReverseProxy
         docker push ${{ secrets.DOCKER_USERNAME }}/car-rental-reverse-proxy:latest
 
-    - name: Build and push database image
+    - name: Build and push database
       run: |
         docker build -t ${{ secrets.DOCKER_USERNAME }}/car-rental-database:latest ./Database
         docker push ${{ secrets.DOCKER_USERNAME }}/car-rental-database:latest
 
-    - name: Set up SSH
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ secrets.SWARM_MANAGER_IP }} >> ~/.ssh/known_hosts
+  deploy:
+    name: Deploy to Docker Swarm
+    runs-on: [self-hosted]
+    needs: publish
 
-    - name: Deploy to Docker Swarm
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Deploy stack
       run: |
-        scp docker-stack.yml root@${{ secrets.SWARM_MANAGER_IP }}:${{ secrets.WORKING_DIRECTORY }}/docker-stack.yml
-        ssh root@${{ secrets.SWARM_MANAGER_IP }} "docker stack deploy -c ${{ secrets.WORKING_DIRECTORY }}/docker-stack.yml car-rental"
+        docker stack deploy -c ./docker-stack.yml car-rental
