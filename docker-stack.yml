@@ -1,0 +1,54 @@
+services:
+  database:
+    image: madddsnail/car-rental-database:latest
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.role == worker
+          - node.labels.role == backend
+
+  backend:
+    image: madddsnail/car-rental-backend:latest
+    depends_on:
+      - database
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
+          - node.labels.role == backend
+      restart_policy:
+        condition: on-failure
+
+  frontend:
+    image: madddsnail/car-rental-frontend:latest
+    deploy:
+      replicas: 1
+      placement:
+        constraints:
+          - node.role == worker
+          - node.labels.role == frontend
+      restart_policy:
+        condition: on-failure
+
+  reverse-proxy:
+    image: madddsnail/car-rental-reverse-proxy:latest
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "80:80"
+    deploy:
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.role == worker
+          - node.labels.role == backend
+
+volumes:
+  db_data:
